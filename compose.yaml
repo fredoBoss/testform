@@ -1,0 +1,33 @@
+# The app (gunicorn + WhiteNoise, DEBUG off) and Postgres, on http://localhost:8000.
+# Needs DJANGO_SECRET_KEY in .env next to this file; see .env.example.
+services:
+  web:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:?Set DJANGO_SECRET_KEY in .env (see .env.example)}
+      DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1}
+      DATABASE_URL: postgres://feedback:${POSTGRES_PASSWORD:-feedback}@db:5432/feedback
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: feedback
+      POSTGRES_USER: feedback
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-feedback}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U feedback -d feedback"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+volumes:
+  postgres-data:

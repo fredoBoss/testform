@@ -26,15 +26,18 @@ ON_VERCEL = os.environ.get('VERCEL') == '1'
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
+# SECURITY WARNING: don't run with debug turned on in production!
+DEBUG = os.environ.get('DJANGO_DEBUG', '0' if ON_VERCEL else '1') == '1'
+
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY')
 if not SECRET_KEY:
-    if ON_VERCEL:
-        raise ImproperlyConfigured('Set DJANGO_SECRET_KEY in the Vercel project environment variables.')
+    # The fallback key is public, so it's only acceptable for local development
+    # (Vercel, the Docker image and any other DEBUG-off run must set a real one).
+    if not DEBUG:
+        where = ' in the Vercel project environment variables' if ON_VERCEL else ''
+        raise ImproperlyConfigured(f'Set DJANGO_SECRET_KEY{where}; it is required when DEBUG is off.')
     SECRET_KEY = 'django-insecure-e@kt!88nn$k-!&q=9inqx0bd0d0bpid92z0cu1#w1b%8&#(@)m'
-
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get('DJANGO_DEBUG', '0' if ON_VERCEL else '1') == '1'
 
 ALLOWED_HOSTS = [host for host in os.environ.get('DJANGO_ALLOWED_HOSTS', '').split(',') if host]
 # The deployment, branch and production domains Vercel assigns, so no host list is needed there.
@@ -75,6 +78,10 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+if not DEBUG:
+    # WhiteNoise serves the collectstatic output (the Docker image runs gunicorn, which can't);
+    # it must come right after SecurityMiddleware. With DEBUG on, runserver serves static files.
+    MIDDLEWARE.insert(1, 'whitenoise.middleware.WhiteNoiseMiddleware')
 
 ROOT_URLCONF = 'config.urls'
 
