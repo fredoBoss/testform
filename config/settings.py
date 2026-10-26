@@ -109,7 +109,12 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # Postgres when DATABASE_URL is set (the Neon integration sets it on Vercel), SQLite otherwise.
 # Vercel's filesystem is read-only and not shared between instances, so SQLite can't be used there.
 DATABASES = {
-    'default': dj_database_url.config(default=f'sqlite:///{BASE_DIR / "db.sqlite3"}'),
+    'default': dj_database_url.config(
+        default=f'sqlite:///{BASE_DIR / "db.sqlite3"}',
+        # Neon's recommended DATABASE_URL goes through PgBouncer in transaction mode,
+        # which doesn't support server-side cursors (QuerySet.iterator()).
+        disable_server_side_cursors=True,
+    ),
 }
 if ON_VERCEL and DATABASES['default']['ENGINE'] == 'django.db.backends.sqlite3':
     raise ImproperlyConfigured('Set DATABASE_URL, for example by adding the Neon Postgres integration in Vercel.')

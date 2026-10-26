@@ -1,3 +1,8 @@
+import os
+from io import StringIO
+from unittest import mock
+
+from django.core.management import CommandError, call_command
 from django.test import TestCase
 from django.urls import reverse
 
@@ -109,3 +114,46 @@ class UserManagementTests(TestCase):
 
         self.assertEqual(response.status_code, 403)
         self.assertFalse(User.objects.filter(username='dave').exists())
+
+
+class BootstrapAdminTests(TestCase):
+    env = {
+        'DJANGO_SUPERUSER_USERNAME': 'owner',
+        'DJANGO_SUPERUSER_EMAIL': 'owner@example.com',
+        'DJANGO_SUPERUSER_PASSWORD': PASSWORD,
+    }
+
+    def run_command(self, env):
+        with mock.patch.dict(os.environ, env):
+            call_command('bootstrap_admin', stdout=StringIO())
+
+    def test_creates_first_admin_from_environment(self):
+        self.run_command(self.env)
+
+        user = User.objects.get(username='owner')
+        self.assertTrue(user.is_admin)
+        self.assertTrue(user.is_superuser)
+        self.assertTrue(user.check_password(PASSWORD))
+
+    def test_does_nothing_once_an_admin_exists(self):
+        User.objects.create_user('admin', 'admin@example.com', PASSWORD, role=User.Role.ADMIN)
+
+        self.run_command(self.env)
+
+        self.assertFalse(User.objects.filter(username='owner').exists())
+
+    def test_skips_when_variables_are_unset(self):
+        self.run_command({name: '' for name in self.env})
+        self.assertFalse(User.objects.exists())
+
+    def test_rejects_weak_password(self):
+        with self.assertRaisesMessage(CommandError, 'DJANGO_SUPERUSER_PASSWORD was rejected'):
+            self.run_command({**self.env, 'DJANGO_SUPERUSER_PASSWORD': 'password'})
+        self.assertFalse(User.objects.exists())
+
+    def test_rejects_username_taken_by_a_customer(self):
+        User.objects.create_user('Owner', 'someone@example.com', PASSWORD)
+
+        with self.assertRaises(CommandError):
+            self.run_command(self.env)
+        self.assertFalse(User.objects.filter(role=User.Role.ADMIN).exists())

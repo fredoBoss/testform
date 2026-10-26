@@ -24,11 +24,24 @@ python -m venv .venv && .venv/Scripts/python -m pip install -r requirements.txt 
 .venv/Scripts/python manage.py makemigrations
 ```
 
-Settings read `DJANGO_SECRET_KEY`, `DJANGO_DEBUG` (`1`/`0`, defaults to `1`), `DJANGO_ALLOWED_HOSTS` (comma-separated) and `DATABASE_URL` (Postgres; SQLite at `db.sqlite3` when unset) from the environment. With `DEBUG=0`, `runserver` does not serve static files.
+Settings read `DJANGO_SECRET_KEY`, `DJANGO_DEBUG` (`1`/`0`, defaults to `1`), `DJANGO_ALLOWED_HOSTS` (comma-separated) and `DATABASE_URL` (Postgres; SQLite at `db.sqlite3` when unset) from the environment. With `DEBUG` off, settings refuse to start without `DJANGO_SECRET_KEY`, because the built-in fallback key is public. They also add WhiteNoise to serve `collectstatic` output, so run `collectstatic` first. With `DEBUG` on, `runserver` serves static files and WhiteNoise isn't loaded.
+
+### Docker
+
+`Dockerfile` builds a production image: Python 3.11-slim, non-root `app` user, `DJANGO_DEBUG=0`, and static files collected at build time and served by WhiteNoise. On start the container runs `migrate`, then gunicorn on `$PORT` (default 8000), with `WEB_CONCURRENCY` workers (default 3). `compose.yaml` adds Postgres 17 and wires up `DATABASE_URL`. It refuses to start until `DJANGO_SECRET_KEY` is set in `.env` (copy `.env.example`).
+
+```sh
+docker compose up --build                                          # http://localhost:8000
+docker compose exec web python manage.py createsuperuser
+docker compose run --rm -e DJANGO_DEBUG=1 web python manage.py seed_demo   # demo data needs DEBUG
+docker compose down            # add -v to also delete the Postgres volume
+```
 
 ### Deployment (Vercel)
 
-Deployed on Vercel with its zero-config Django support: it finds `manage.py`, uses `WSGI_APPLICATION`, runs `collectstatic` into `STATIC_ROOT` and serves `/static/` from its CDN. There is no `vercel.json`. When `VERCEL=1`, settings default `DEBUG` to off, add Vercel's domains to `ALLOWED_HOSTS`/`CSRF_TRUSTED_ORIGINS`, enable secure cookies, and refuse to start without `DJANGO_SECRET_KEY` or a Postgres `DATABASE_URL`, because Vercel's filesystem is read-only and per-instance. Vercel doesn't run migrations: run `migrate` (and `createsuperuser`) locally with `DATABASE_URL` pointing at the production database. `.vercelignore` keeps `.venv` and `db.sqlite3` out of CLI uploads.
+Deployed on Vercel with its zero-config Django support: it finds `manage.py`, uses `WSGI_APPLICATION`, runs `collectstatic` into `STATIC_ROOT` and serves `/static/` from its CDN. When `VERCEL=1`, settings default `DEBUG` to off, add Vercel's domains to `ALLOWED_HOSTS`/`CSRF_TRUSTED_ORIGINS`, enable secure cookies, and refuse to start without `DJANGO_SECRET_KEY` or a Postgres `DATABASE_URL`, because Vercel's filesystem is read-only and per-instance. Vercel imports the settings during the build, not just at runtime. So `DJANGO_SECRET_KEY` and `DATABASE_URL` must already be set for Production and Preview before a deploy, or the build fails with `DJANGO_SETTINGS_FAILED`. The database comes from the Neon integration, which sets `DATABASE_URL` (pooled through PgBouncer, hence `disable_server_side_cursors`) and `DATABASE_URL_UNPOOLED`.
+
+The `buildCommand` in `vercel.json` runs only for production deploys (`VERCEL_ENV=production`). It applies `migrate` over `DATABASE_URL_UNPOOLED`, then runs `bootstrap_admin`, which creates the first admin from `DJANGO_SUPERUSER_USERNAME`/`_EMAIL`/`_PASSWORD` and does nothing once any admin exists. Preview deploys share the production database, so they never migrate. A migration therefore reaches the database only when it's merged to `main`, and a failing migration fails the production build. `.vercelignore` keeps `.venv` and `db.sqlite3` out of CLI uploads.
 
 ## Architecture
 
