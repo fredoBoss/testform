@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block title %}Delete feedback{% endblock %}
+
+{% block content %}
+<div class="narrow">
+  <div class="card">
+    <h1>Delete this feedback?</h1>
+    <p>“<strong>{{ feedback.subject }}</strong>” from {{ feedback.customer.username }} will be permanently deleted. This can't be undone.</p>
+    <form method="post" class="form-actions">
+      {% csrf_token %}
+      <a class="btn btn-secondary" href="{{ feedback.get_absolute_url }}">Cancel</a>
+      <button type="submit" class="btn btn-danger">Delete</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

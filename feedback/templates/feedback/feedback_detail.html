@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block title %}{{ feedback.subject }}{% endblock %}
+
+{% block content %}
+{% if user.is_admin %}
+  <p><a class="back-link" href="{% url 'feedback:dashboard' %}">← Back to dashboard</a></p>
+{% else %}
+  <p><a class="back-link" href="{% url 'feedback:mine' %}">← Back to my feedback</a></p>
+{% endif %}
+
+<div class="detail-grid{% if not user.is_admin %} single{% endif %}">
+  <article class="card">
+    <div class="feedback-item-top">
+      <h1>{{ feedback.subject }}</h1>
+      <span class="badge status-{{ feedback.status }}">{{ feedback.get_status_display }}</span>
+    </div>
+    <div class="meta">
+      {% include "feedback/_stars.html" with rating=feedback.rating %}
+      <span>{{ feedback.get_rating_display }}</span>
+      <span>{{ feedback.get_category_display }}</span>
+      <span>Sent {{ feedback.created_at|date:"M j, Y, g:i a" }}</span>
+      {% if user.is_admin %}<span>by <strong>{{ feedback.customer.get_full_name|default:feedback.customer.username }}</strong> ({{ feedback.customer.email }})</span>{% endif %}
+    </div>
+
+    <div class="message-body">{{ feedback.message|linebreaks }}</div>
+
+    {% if feedback.admin_response %}
+      <section class="response">
+        <h2>Our reply</h2>
+        {{ feedback.admin_response|linebreaks }}
+      </section>
+    {% elif not user.is_admin %}
+      <p class="muted">We haven't replied yet. You'll see our response here.</p>
+    {% endif %}
+  </article>
+
+  {% if user.is_admin %}
+    <aside class="card">
+      <h2>Review</h2>
+      <form method="post" action="{% url 'feedback:review' feedback.pk %}" class="form">
+        {% csrf_token %}
+        <div class="form-fields">{{ form.as_div }}</div>
+        <button type="submit" class="btn btn-primary btn-block">Save</button>
+      </form>
+      <hr>
+      <a class="btn btn-danger-outline btn-block" href="{% url 'feedback:delete' feedback.pk %}">Delete feedback</a>
+    </aside>
+  {% endif %}
+</div>
+{% endblock %}

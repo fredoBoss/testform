@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}My feedback{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>My feedback</h1>
+    <p class="muted">Everything you've sent us, and our replies.</p>
+  </div>
+  <a class="btn btn-primary" href="{% url 'feedback:create' %}">Give feedback</a>
+</div>
+
+{% if feedback_list %}
+  <ul class="feedback-list">
+    {% for feedback in feedback_list %}
+      <li>
+        <a class="card feedback-item" href="{{ feedback.get_absolute_url }}">
+          <div class="feedback-item-top">
+            <h2>{{ feedback.subject }}</h2>
+            <span class="badge status-{{ feedback.status }}">{{ feedback.get_status_display }}</span>
+          </div>
+          <p class="feedback-snippet">{{ feedback.message|truncatechars:160 }}</p>
+          <div class="meta">
+            {% include "feedback/_stars.html" with rating=feedback.rating %}
+            <span>{{ feedback.get_category_display }}</span>
+            <span>{{ feedback.created_at|date:"M j, Y" }}</span>
+            {% if feedback.admin_response %}<span class="has-reply">Reply received</span>{% endif %}
+          </div>
+        </a>
+      </li>
+    {% endfor %}
+  </ul>
+  {% include "includes/pagination.html" %}
+{% else %}
+  <div class="card empty-state">
+    <h2>No feedback yet</h2>
+    <p class="muted">Had a great experience, or a frustrating one? We'd like to hear about it.</p>
+    <a class="btn btn-primary" href="{% url 'feedback:create' %}">Send your first feedback</a>
+  </div>
+{% endif %}
+{% endblock %}

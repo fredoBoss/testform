@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}Users{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>Users</h1>
+    <p class="muted">Customers sign up themselves. Only admins can create admin accounts.</p>
+  </div>
+  <a class="btn btn-primary" href="{% url 'accounts:create-admin' %}">New admin</a>
+</div>
+
+<div class="card table-wrap">
+  <table class="table">
+    <thead>
+      <tr>
+        <th scope="col">Username</th>
+        <th scope="col">Name</th>
+        <th scope="col">Email</th>
+        <th scope="col">Role</th>
+        <th scope="col" class="num">Feedback</th>
+        <th scope="col">Joined</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for account in users %}
+        <tr>
+          <td><strong>{{ account.username }}</strong></td>
+          <td>{{ account.get_full_name|default:"—" }}</td>
+          <td>{{ account.email }}</td>
+          <td><span class="badge badge-{{ account.role }}">{{ account.get_role_display }}</span></td>
+          <td class="num">{{ account.feedback_count }}</td>
+          <td class="nowrap">{{ account.date_joined|date:"M j, Y" }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% include "includes/pagination.html" %}
+{% endblock %}

@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Log in{% endblock %}
+
+{% block scripts %}<script src="{% static 'js/password-toggle.js' %}" defer></script>{% endblock %}
+
+{% block content %}
+<div class="auth">
+  <div class="card auth-card">
+    <h1>Welcome back</h1>
+    <p class="muted">Log in to share feedback or check on a response.</p>
+
+    <form method="post" class="form">
+      {% csrf_token %}
+      <div class="form-fields">{{ form.as_div }}</div>
+      <input type="hidden" name="next" value="{{ next }}">
+      <button type="submit" class="btn btn-primary btn-block">Log in</button>
+    </form>
+
+    <p class="auth-switch">New here? <a href="{% url 'accounts:signup' %}">Create an account</a></p>
+  </div>
+</div>
+{% endblock %}

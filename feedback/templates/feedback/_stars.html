@@ -1,0 +1,1 @@
+<span class="stars-display" role="img" aria-label="{{ rating }} out of 5 stars">{% for i in "12345" %}<span{% if forloop.counter > rating %} class="off"{% endif %} aria-hidden="true">★</span>{% endfor %}</span>

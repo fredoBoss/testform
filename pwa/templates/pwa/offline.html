@@ -1,0 +1,24 @@
+{% load static %}<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Offline · Feedback</title>
+  <meta name="theme-color" content="#ffffff">
+  <link rel="icon" href="{% static 'icons/icon-48x48.png' %}" type="image/png" sizes="48x48">
+  <link rel="stylesheet" href="{% static 'css/app.css' %}">
+</head>
+<body>
+  {# Precached by the service worker: keep this page free of any user-specific content. #}
+  <main class="container main">
+    <div class="auth">
+      <div class="card auth-card text-center">
+        <img src="{% static 'icons/icon-144x144.png' %}" alt="Perfect Milling Corporation" width="72" height="72" class="logo offline-icon">
+        <h1>You're offline</h1>
+        <p class="muted">Check your connection, then try again. Feedback can only be sent and read while you're online.</p>
+        <a href="/" class="btn btn-primary btn-block">Try again</a>
+      </div>
+    </div>
+  </main>
+</body>
+</html>

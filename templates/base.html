@@ -1,0 +1,74 @@
+{% load static %}<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Customer Feedback{% endblock %} · Feedback</title>
+  <meta name="description" content="Share feedback and follow up on responses.">
+  <meta name="theme-color" content="#ffffff">
+  <link rel="manifest" href="{% url 'pwa:manifest' %}">
+  <link rel="icon" href="{% static 'icons/icon-48x48.png' %}" type="image/png" sizes="48x48">
+  <link rel="icon" href="{% static 'icons/icon-96x96.png' %}" type="image/png" sizes="96x96">
+  <link rel="apple-touch-icon" href="{% static 'icons/icon-192x192.png' %}">
+  <link rel="stylesheet" href="{% static 'css/app.css' %}">
+  <script src="{% static 'pwa/pwa.js' %}" data-sw-url="{% url 'pwa:service-worker' %}" defer></script>
+  {% block scripts %}{% endblock %}
+</head>
+<body>
+  <div class="offline-banner" role="status" data-offline-banner hidden>
+    You're offline. You need a connection to send or read feedback.
+  </div>
+
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="{% url 'home' %}">
+        <img src="{% static 'icons/icon-96x96.png' %}" alt="Perfect Milling Corporation" width="44" height="44" class="logo">
+        <span>Feedback</span>
+      </a>
+
+      {% with current=request.resolver_match.view_name %}
+      <nav class="nav" aria-label="Main">
+        {% if user.is_authenticated %}
+          {% if user.is_admin %}
+            <a href="{% url 'feedback:dashboard' %}"{% if current == 'feedback:dashboard' %} aria-current="page"{% endif %}>Dashboard</a>
+            <a href="{% url 'accounts:users' %}"{% if current == 'accounts:users' or current == 'accounts:create-admin' %} aria-current="page"{% endif %}>Users</a>
+          {% else %}
+            <a href="{% url 'feedback:create' %}"{% if current == 'feedback:create' %} aria-current="page"{% endif %}>Give feedback</a>
+            <a href="{% url 'feedback:mine' %}"{% if current == 'feedback:mine' %} aria-current="page"{% endif %}>My feedback</a>
+          {% endif %}
+        {% endif %}
+      </nav>
+      {% endwith %}
+
+      <div class="header-actions">
+        <button type="button" class="btn btn-secondary btn-sm" data-install-button hidden>Install app</button>
+        {% if user.is_authenticated %}
+          <span class="user-chip">
+            <span class="user-name">{{ user.get_username }}</span>
+            <span class="badge badge-{{ user.role }}">{{ user.get_role_display }}</span>
+          </span>
+          <form method="post" action="{% url 'accounts:logout' %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-ghost btn-sm">Log out</button>
+          </form>
+        {% else %}
+          <a class="btn btn-ghost btn-sm" href="{% url 'accounts:login' %}">Log in</a>
+          <a class="btn btn-primary btn-sm" href="{% url 'accounts:signup' %}">Sign up</a>
+        {% endif %}
+      </div>
+    </div>
+  </header>
+
+  <main class="container main">
+    {% if messages %}
+      <div class="messages">
+        {% for message in messages %}
+          <div class="alert alert-{{ message.tags }}" role="status">{{ message }}</div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

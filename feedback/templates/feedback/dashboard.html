@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>Feedback dashboard</h1>
+    <p class="muted">All customer feedback, newest first.</p>
+  </div>
+</div>
+
+<div class="stats">
+  <div class="card stat"><span class="stat-label">Total</span><span class="stat-value">{{ stats.total }}</span></div>
+  <div class="card stat"><span class="stat-label">New</span><span class="stat-value">{{ stats.new }}</span></div>
+  <div class="card stat"><span class="stat-label">In review</span><span class="stat-value">{{ stats.in_review }}</span></div>
+  <div class="card stat"><span class="stat-label">Resolved</span><span class="stat-value">{{ stats.resolved }}</span></div>
+  <div class="card stat"><span class="stat-label">Average rating</span><span class="stat-value">{{ stats.avg_rating|floatformat:1|default:"—" }}<small> / 5</small></span></div>
+</div>
+
+<form method="get" class="card filters">
+  <div class="filter-search">{{ filter_form.q.as_field_group }}</div>
+  <div>{{ filter_form.status.as_field_group }}</div>
+  <div>{{ filter_form.category.as_field_group }}</div>
+  <div>{{ filter_form.rating.as_field_group }}</div>
+  <div class="filter-actions">
+    <button type="submit" class="btn btn-primary">Filter</button>
+    <a class="btn btn-secondary" href="{% url 'feedback:dashboard' %}">Reset</a>
+  </div>
+</form>
+
+{% if feedback_list %}
+  <div class="card table-wrap">
+    <table class="table">
+      <thead>
+        <tr>
+          <th scope="col">Subject</th>
+          <th scope="col">Customer</th>
+          <th scope="col">Category</th>
+          <th scope="col">Rating</th>
+          <th scope="col">Status</th>
+          <th scope="col">Sent</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for feedback in feedback_list %}
+          <tr>
+            <td><a href="{{ feedback.get_absolute_url }}"><strong>{{ feedback.subject }}</strong></a></td>
+            <td>{{ feedback.customer.username }}</td>
+            <td>{{ feedback.get_category_display }}</td>
+            <td class="nowrap">{% include "feedback/_stars.html" with rating=feedback.rating %}</td>
+            <td><span class="badge status-{{ feedback.status }}">{{ feedback.get_status_display }}</span></td>
+            <td class="nowrap">{{ feedback.created_at|date:"M j, Y" }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% include "includes/pagination.html" %}
+{% else %}
+  <div class="card empty-state">
+    <h2>No feedback found</h2>
+    <p class="muted">{% if request.GET %}Try different filters.{% else %}Customer feedback will show up here.{% endif %}</p>
+  </div>
+{% endif %}
+{% endblock %}
