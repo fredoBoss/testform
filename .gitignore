@@ -6,3 +6,4 @@ staticfiles/
 .env
 .vercel
 .env*.local
+*.img
